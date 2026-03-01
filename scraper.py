@@ -176,6 +176,8 @@ def entry():
 
       if row:
         pd.DataFrame([row]).to_csv(output_file, mode='a', header=not output_file.exists(), index=False)
+        success += 1
+        
       pbar.set_postfix({'success': success, 'rate': f"{(success-1) / pbar.n:.2%}" if pbar.n else '0%'})
     except Exception as e:
       print(f'Error on {link}: {e}')
