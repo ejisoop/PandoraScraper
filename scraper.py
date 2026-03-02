@@ -78,7 +78,7 @@ def extract_product(page, context, url, direct_download):
     for i, img_bytes in enumerate(saved):
       with open(f'data/images/{product_id}/{i}.png', 'wb') as f:
         f.write(img_bytes)
-        white_r.append(white_ratio('data/images/{product_id}/{i}.png'))
+        white_r.append(white_ratio(f'data/images/{product_id}/{i}.png'))
 
   name = page.locator('//h1[@data-auto="productName"]').text_content().strip()
 
@@ -199,6 +199,10 @@ def entry():
       
 
   print(f'Successfully scarped {success} out of {len(links)} ({(success/len(links)*100):.2f}%)')
+
+  context.close()
+  browser.close()
+  p.stop()
 
 if __name__ == '__main__':
   entry()
