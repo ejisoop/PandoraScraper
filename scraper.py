@@ -5,6 +5,15 @@ from urllib.parse import urlparse
 from pathlib import Path
 from tqdm import tqdm
 from playwright.sync_api import sync_playwright
+from PIL import Image
+import numpy as np
+import shutil
+
+def white_ratio(im_path, threshold=230):
+  img = Image.open(im_path).convert("RGB")
+  arr = np.array(img)
+
+  return np.mean(((arr[:, :, 0] > threshold) & (arr[:, :, 1] > threshold) & (arr[:, :, 2] > threshold)))
 
 def is_url(s):
   return s.startswith('http://') or s.startswith('https://')
@@ -46,27 +55,30 @@ def extract_product(page, context, url, direct_download):
 
   os.makedirs(f'data/images/{product_id}', exist_ok=True)
 
+  white_r = []
+
   if not direct_download:
     saved = []
     
     def handle_response(response):
-      if response.status == 200 and "/dw/image/" in response.url and product_id in response.url:
+      if response.status == 200 and '/dw/image/' in response.url and product_id in response.url:
         try:
           saved.append(response.body())
         except:
           pass
 
-    page.on("response", handle_response)
+    page.on('response', handle_response)
 
-  page.goto(url, wait_until="domcontentloaded")
+  page.goto(url, wait_until='domcontentloaded')
   page.wait_for_selector('//span[@data-auto="lblRegularPrice"]', timeout=15000)
 
   if not direct_download:
-    page.remove_listener("response", handle_response)
+    page.remove_listener('response', handle_response)
 
     for i, img_bytes in enumerate(saved):
-      with open(f"data/images/{product_id}/{i}.png", "wb") as f:
+      with open(f'data/images/{product_id}/{i}.png', 'wb') as f:
         f.write(img_bytes)
+        white_r.append(white_ratio('data/images/{product_id}/{i}.png'))
 
   name = page.locator('//h1[@data-auto="productName"]').text_content().strip()
 
@@ -83,6 +95,9 @@ def extract_product(page, context, url, direct_download):
 
     for i, img_url in enumerate(img_urls):
       download_image(context, img_url, f'data/images/{product_id}/{i}.png')
+      white_r.append(white_ratio(f'data/images/{product_id}/{i}.png'))
+
+  shutil.copy2(f'data/images/{product_id}/{max(range(len(white_r)), key=lambda i: white_r[i])}.png', f'data/images/{product_id}/main.png')
 
   details_btn = page.locator('//*[@data-auto="moreLinkDetails"]')
   if details_btn.is_visible():
@@ -177,7 +192,7 @@ def entry():
       if row:
         pd.DataFrame([row]).to_csv(output_file, mode='a', header=not output_file.exists(), index=False)
         success += 1
-        
+
       pbar.set_postfix({'success': success, 'rate': f"{(success-1) / pbar.n:.2%}" if pbar.n else '0%'})
     except Exception as e:
       print(f'Error on {link}: {e}')
