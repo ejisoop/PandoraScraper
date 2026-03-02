@@ -114,9 +114,10 @@ def extract_product(page, context, url, direct_download):
   materials = [m.text_content().strip() for m in page.locator('//h2[@data-auto="materialDetailStyle"]').all()] or None
 
   dimensions = None
-  dim_el = page.locator('//p[@data-auto="dimensions"]')
-  if dim_el.count() > 0:
-    dimensions = dim_el.first.text_content().strip()
+  dim_el = page.locator('//p[@data-auto="dimensions"]/following-sibling::p[1]')
+
+  if dim_el.first.is_visible():
+    dimensions = dim_el.first.inner_text().strip()
 
   return {
     "id": product_id,
