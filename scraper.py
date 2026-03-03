@@ -10,7 +10,7 @@ import numpy as np
 import shutil
 
 def white_ratio(im_path, threshold=230):
-  img = Image.open(im_path).convert("RGB")
+  img = Image.open(im_path).convert('RGB')
   arr = np.array(img)
 
   return np.mean(((arr[:, :, 0] > threshold) & (arr[:, :, 1] > threshold) & (arr[:, :, 2] > threshold)))
@@ -21,7 +21,7 @@ def is_url(s):
 def download_image(context, img_url, save_path):
   response = context.request.get(img_url)
   if response.ok:
-    with open(save_path, "wb") as f:
+    with open(save_path, 'wb') as f:
       f.write(response.body())
     return True
   return False
@@ -91,7 +91,7 @@ def extract_product(page, context, url, direct_download):
       price = None
   
   if direct_download:
-    img_urls = [s.split("?")[0] + "?sfrm=png" for s in page.eval_on_selector_all('//img[@itemprop="image"]', 'imgs => imgs.map(img => img.src)') if s]
+    img_urls = [s.split('?')[0] + '?sfrm=png' for s in page.eval_on_selector_all('//img[@itemprop="image"]', 'imgs => imgs.map(img => img.src)') if s]
 
     for i, img_url in enumerate(img_urls):
       download_image(context, img_url, f'data/images/{product_id}/{i}.png')
@@ -120,14 +120,14 @@ def extract_product(page, context, url, direct_download):
     dimensions = dim_el.first.inner_text().strip()
 
   return {
-    "id": product_id,
-    "category": category,
-    "url": url,
-    "name": name,
-    "description": desc,
-    "price": price,
-    "dimensions": dimensions,
-    "materials": materials
+    'id': product_id,
+    'category': category,
+    'url': url,
+    'name': name,
+    'description': desc,
+    'price': price,
+    'dimensions': dimensions,
+    'materials': materials
   }
 
 def entry():
@@ -139,7 +139,7 @@ def entry():
 
   p = sync_playwright().start()
   browser = p.chromium.launch(headless=False)
-  context = browser.new_context(viewport={"width": 1920, "height": 1080})
+  context = browser.new_context(viewport={'width': 1920, 'height': 1080})
   page = context.new_page()
   
   if is_url(args.url):
@@ -148,8 +148,8 @@ def entry():
     parsed = urlparse(args.url)
     parts = [p for p in parsed.path.split('/') if p]
 
-    if len(parts) < 2 or parts[0] != "en":
-      raise ValueError("Unexpected URL format")
+    if len(parts) < 2 or parts[0] != 'en':
+      raise ValueError('Unexpected URL format')
 
     identifier = parts[1]
 
@@ -159,10 +159,12 @@ def entry():
     print('Using existing link list')
     path = Path(args.url)
     if not path.exists():
-      raise FileNotFoundError(f"{args.url} not found")
+      raise FileNotFoundError(f'{args.url} not found')
 
     identifier = path.stem.split('-')[0]
     links = pd.read_csv(path, header=None).squeeze('columns')
+
+  identifier += '^'
   
   print(f'Extracted {len(links)} product links')
 
@@ -194,7 +196,14 @@ def entry():
         pd.DataFrame([row]).to_csv(output_file, mode='a', header=not output_file.exists(), index=False)
         success += 1
 
-      pbar.set_postfix({'success': success, 'rate': f"{(success-1) / pbar.n:.2%}" if pbar.n else '0%'})
+      if success % 20 == 0:
+        context.close()
+        browser.close()
+        browser = p.chromium.launch(headless=False)
+        context = browser.new_context(viewport={'width': 1920, 'height': 1080})
+        page = context.new_page()
+
+      pbar.set_postfix({'success': success, 'rate': f'{(success-1) / pbar.n:.2%}' if pbar.n else '0%'})
     except Exception as e:
       print(f'Error on {link}: {e}')
       
