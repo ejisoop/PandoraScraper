@@ -34,6 +34,10 @@ python3 scraper.py {url | path to link file}
 
 Given a category url scraper will collect all product links from the page and save them to <category>-links.csv. Visit each product page and scrape and append results to <category>.csv. If given a path to a pre-existing csv of links it will skip the product extraction (note links csv must have a - in the file name to avoid overwrite).
 
+```
+python3 sanitize.py --dirs {optional list of manual csvs to combine} --no_sanitize {optional to delete empty directories and invalid rows} --out {optional defaults to data/merged.csv}
+```
+
 ### Example
 
 ```
